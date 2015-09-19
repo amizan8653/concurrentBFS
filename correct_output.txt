@@ -9998,4 +9998,4 @@
 16
 19
 25
-It took 2945 milliseconds
+It took 829 milliseconds

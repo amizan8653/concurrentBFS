@@ -14,6 +14,9 @@
  * After HashMap created, you scan in the test cases and look it up on the HashMap
  */
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.*;
 
 public class BFS{
@@ -217,42 +220,50 @@ public class BFS{
 	public static void main (String [] args){
 		long startTime = System.currentTimeMillis();
 		int numOfMoves = 0;
-		Scanner screenReader = new Scanner(System.in); //read in keyboard input
+		File file = new File("Input.in");
+		Scanner screenReader;
+		try {
+			screenReader = new Scanner(file);
+			PrintWriter out = new PrintWriter("outputResults.txt");
 		
-		int numOfCases = screenReader.nextInt(); //read in number of cases
-		
-		puzzlePosition root = new puzzlePosition(); //create the root of our graph.
-		//this is the Queue used by the BFS
-		Queue myQueue = new Queue(50000);
-		
-
-		//create the hashMap for pulling values for test cases
-		HashMap <Integer, Integer> directory = new HashMap<Integer, Integer>();
-
-		graphCreation(root, myQueue, directory); //create the graph itself containing
-							//every possible unsolved permutation
-		
-		
-		//this loop will execute once per test case
-		for (int i = 0; i < numOfCases; i++){
+			int numOfCases = screenReader.nextInt(); //read in number of cases
+			
+			puzzlePosition root = new puzzlePosition(); //create the root of our graph.
+			//this is the Queue used by the BFS
+			Queue myQueue = new Queue(50000);
+			
+	
+			//create the hashMap for pulling values for test cases
+			HashMap <Integer, Integer> directory = new HashMap<Integer, Integer>();
+	
+			graphCreation(root, myQueue, directory); //create the graph itself containing
+								//every possible unsolved permutation
 			
 			
-			int puzzleHash = 0; //will represent the input board
-			
-				for (int k = 0; k < 3; k++){
-					for (int j = 0; j < 3; j++){
-						puzzleHash = puzzleHash +  powersOfTen(9- ((k*3) + j + 1)) * screenReader.nextInt();
+			//this loop will execute once per test case
+			for (int i = 0; i < numOfCases; i++){
+				
+				
+				int puzzleHash = 0; //will represent the input board
+				
+					for (int k = 0; k < 3; k++){
+						for (int j = 0; j < 3; j++){
+							puzzleHash = puzzleHash +  powersOfTen(9- ((k*3) + j + 1)) * screenReader.nextInt();
+						}
 					}
-				}
-
-			numOfMoves = directory.get(puzzleHash);
-			System.out.println(numOfMoves);
-		
+	
+				numOfMoves = directory.get(puzzleHash);
+				out.println(numOfMoves);
 			
-		}
-		
-		long endTime = System.currentTimeMillis();
-        System.out.println("It took " + (endTime - startTime) + " milliseconds");
+				
+			}
+			long endTime = System.currentTimeMillis();
+	        out.println("It took " + (endTime - startTime) + " milliseconds");
+	        out.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} //read in keyboard input
 		
 	}
 	
@@ -328,7 +339,7 @@ public class BFS{
 				
 				//if statement executes if hashMap doesn't already contain value
 				if( AlreadyCreated.contains(u.getHash()) == false){
-					//System.out.printf("Add to Queue\n");
+					//out.printf("Add to Queue\n");
 					AlreadyCreated.add(u.getHash()); //add to hashSet
 					myQueue.insert(u); //go ahead and enqueue this possible solution
 					directory.put(u.hashValue, u.level);//update the HashMap
@@ -342,7 +353,7 @@ public class BFS{
 				
 				//if statement executes if hashSet doesn't already contain value
 				if( AlreadyCreated.contains(u.getHash()) == false){
-					//System.out.printf("Add to Queue\n");
+					//out.printf("Add to Queue\n");
 					AlreadyCreated.add(u.getHash()); //add to hashSet
 					myQueue.insert(u); //go ahead and enqueue this possible solution
 					directory.put(u.hashValue, u.level);//update the HashMap
@@ -356,7 +367,7 @@ public class BFS{
 				
 				//if statement executes if hashMap doesn't already contain value
 				if( AlreadyCreated.contains(u.getHash()) == false){
-					//System.out.printf("Add to Queue. size of queue: %d\n", myQueue.size());
+					//out.printf("Add to Queue. size of queue: %d\n", myQueue.size());
 					AlreadyCreated.add(u.getHash()); //add to hashSet
 					myQueue.insert(u); //go ahead and enqueue this possible solution
 					directory.put(u.hashValue, u.level); //update the HashMap
