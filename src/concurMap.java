@@ -80,7 +80,6 @@ public class concurMap{
 		node tempNode;
 		int hash = key; //copy the value of key into an integer that will keep getting bit shifted
 		for (int right = 0; right < 32; right += arrayPow){
-			System.out.println("R value: " + right);
 			int pos = hash & (headLength - 1);
 			hash = hash >>> headPowSize;
 			tempNode = getNode(local,pos);
@@ -285,8 +284,12 @@ public class concurMap{
 			//	the newly allocated dataNode
 			arrayNode newArrayNode = new arrayNode(arrayLength);
 			
-			//get the new array index for the marked data node
-			int newPos = (markedNode.hash >>> R) & (arrayLength - 1);
+			//get the new array index for the marked data node. 
+			//NOTE: You can't just shift it by R, you gotta shift it by R + arrayPow so that you now know the position it's
+			//supposed to be in for the array that's ONE LEVEL LOWER.
+			//You don't have to worry about going out of bounds since you won't make any more arrays below max depth 
+			//	if you actaually meet the perfect hashing requirement
+			int newPos = (markedNode.hash >>> (R + arrayPow)) & (arrayLength - 1);
 			
 			//make a pointer point to the deleted node.
 			//there's no possibility of contention on this newly allocated arrayNode since no one else except this
