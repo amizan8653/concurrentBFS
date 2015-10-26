@@ -17,7 +17,10 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+import java.util.HashMap;
 
 public class BFS{
 	
@@ -72,7 +75,7 @@ public class BFS{
 
 	
 	
-	private static ArrayList<String> getMoves(int hashPuzzle, HashMap<Integer, puzzlePosition> directory){
+	private static ArrayList<String> getMoves(int hashPuzzle, concurMap directory){
 		ArrayList<String> moveHistory = new ArrayList<String>();
 		int currPuzzle = hashPuzzle;
 		//traverse up the tree of moves until you get to the solved state
@@ -119,7 +122,7 @@ public class BFS{
 			
 	
 			//create the hashMap for pulling values for test cases
-			HashMap <Integer, puzzlePosition> directory = new HashMap<Integer, puzzlePosition>();
+			concurMap directory = new concurMap(4,4);
 	
 			graphCreation(root, myQueue, directory); //create the graph itself containing
 								//every possible unsolved permutation
@@ -144,7 +147,7 @@ public class BFS{
 			}
 			long endTime = System.currentTimeMillis();
 	        out.println("It took " + (endTime - startTime) + " milliseconds");
-	        System.out.println("Number of permutations: " + directory.size());
+	        //System.out.println("Number of permutations: " + directory.size());
 	        ArrayList<String>moveSet = getMoves(540371268, directory);
 	        System.out.println(moveSet);
 	        out.close();
@@ -160,7 +163,7 @@ public class BFS{
 
 	
 	//creates a graph using BFS algorithm. stores level in hashMap
-	static void graphCreation(puzzlePosition root, Queue myQueue, HashMap <Integer, puzzlePosition> directory){
+	static void graphCreation(puzzlePosition root, Queue myQueue, concurMap directory){
 		
 		//this is a temporary variable used to point to puzzle positions
 		//that will get dequeued.
@@ -168,7 +171,7 @@ public class BFS{
 						
 		//this HashSet will hold the hashes that represent each
 		//and every vertex. each vertex has a unique hashValue
-		HashMap<Integer, Boolean> AlreadyCreated = new HashMap<Integer, Boolean>();
+		HashMap AlreadyCreated = new HashMap<Integer, Boolean>();
 		
 		//store the hash into the hashSet
 		//AlreadyCreated.add(root.getHash()); 
@@ -176,7 +179,14 @@ public class BFS{
 		//insert the root into the queue
 		myQueue.insert(root);
 		//Map of the root
-		directory.put(123456780, root);
+		if (directory.put(123456780, root)){
+			//System.out.println("success");
+		}
+		
+		/*
+		puzzlePosition temp = directory.get(123456780);
+		System.out.println(temp.hashValue);
+		 */
 		
 		//while the queue is not empty
 		while(myQueue.isEmpty() == false){
@@ -200,7 +210,12 @@ public class BFS{
 				if( AlreadyCreated.get(u.getHash()) == null){
 					AlreadyCreated.put(u.getHash(), true); //add to hashMap. The true isn't really needed. all you need is a non-null value
 					myQueue.insert(u); //go ahead and enqueue this possible solution
-					directory.put(u.hashValue, u);//update the HashMap
+					if(directory.put(u.hashValue, u)){//update the HashMap
+						//System.out.println("success");
+					}
+					else{
+						System.out.println("insertion failure at hash " + u.hashValue);
+					}
 				}
 			} //exit case for tile going up
 			
@@ -218,7 +233,11 @@ public class BFS{
 					//out.printf("Add to Queue\n");
 					AlreadyCreated.put(u.getHash(), true); //add to hashSet
 					myQueue.insert(u); //go ahead and enqueue this possible solution
-					directory.put(u.hashValue, u);//update the HashMap
+					if(directory.put(u.hashValue, u)){//update the HashMap
+						//System.out.println("success");
+					}else{
+						System.out.println("insertion failure at hash " + u.hashValue);
+					}
 				}
 			} //exit case for tile going down
 			
@@ -232,7 +251,11 @@ public class BFS{
 					//out.printf("Add to Queue\n");
 					AlreadyCreated.put(u.getHash(), true); //add to hashSet
 					myQueue.insert(u); //go ahead and enqueue this possible solution
-					directory.put(u.hashValue, u);//update the HashMap
+					if(directory.put(u.hashValue, u)){//update the HashMap
+						//System.out.println("success");
+					}else{
+						System.out.println("insertion failure at hash " + u.hashValue);
+					}
 				}
 			} //exit case for tile going left
 			
@@ -246,7 +269,11 @@ public class BFS{
 					//out.printf("Add to Queue. size of queue: %d\n", myQueue.size());
 					AlreadyCreated.put(u.getHash(), true); //add to hashSet
 					myQueue.insert(u); //go ahead and enqueue this possible solution
-					directory.put(u.hashValue, u); //update the HashMap
+					if(directory.put(u.hashValue, u)){//update the HashMap
+						//System.out.println("success");
+					}else{
+						System.out.println("insertion failure at hash " + u.hashValue);
+					}
 				}
 			} //exit case for tile going Right
 			

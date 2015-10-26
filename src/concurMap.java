@@ -55,28 +55,32 @@ public class concurMap{
 		headArrayNode = new arrayNode(headLength);
 	}
 	
+	//fix this garbage function later
+	private boolean isArrayNode(node a){
+		return a.isArrayNode;
+	}
+	
 	private boolean isArrayNode (arrayNode a, int pos){
 		int temp = a.array[pos].getStamp();
 		if (temp == concurMap.ARRAY_NODE)
 			return true;
 		return false;
 	}
+
 	
-	private boolean isArrayNode (node a){
-		//somehow determine this without the use of pointers?
-		//or maybe you're not expected to do that
-	}
 	
 	private node getNode(arrayNode a, int pos){
 		return a.array[pos].getReference();
 	}
 	
-	public int get(int key){
+	public puzzlePosition get(int key){
+		
 		//the key will be the hash in the case of the 8 puzzle solver 
 		arrayNode local = headArrayNode;
 		node tempNode;
 		int hash = key; //copy the value of key into an integer that will keep getting bit shifted
 		for (int right = 0; right < 32; right += arrayPow){
+			System.out.println("R value: " + right);
 			int pos = hash & (headLength - 1);
 			hash = hash >>> headPowSize;
 			tempNode = getNode(local,pos);
@@ -88,15 +92,17 @@ public class concurMap{
 					return ((dataNode)tempNode).data;
 				}
 				else{
-					return -1;
+					System.out.println("returning null inside for loop. tempNode hash: " + ((dataNode)tempNode).hash + " key: " + key);
+					System.out.println("Indexing hash:" + pos);
+					return null;
 				}
 			}
 		}
 		System.out.println("Error: you went out of the for loop in the .get()");
-		return -1; //you should never end up getting here
+		return null; //you should never end up getting here
 	}
 	
-	public boolean put(int key, int value){
+	public boolean put(int key, puzzlePosition value){
 		//the key will be the hash in the case of the 8 puzzle solver 
 		int hash = key; //copy the value of key into an integer that will keep getting bit shifted
 		dataNode insertThis = new dataNode(key, value);
@@ -109,29 +115,38 @@ public class concurMap{
 			int failCount = 0;
 			while (true){
 				if (failCount > MAX_FAIL_COUNT){
+					System.out.println("mark");
 					markDataNode(local, pos);
 				}
 				tempNode = getNode(local, pos);
 				if (isArrayNode(local,pos)){
+					//System.out.println("go a level deeper");
 					local = (arrayNode)tempNode; //safe to cast here. once an arrayNode, you can't go back to being data node
 					break;
 				}
 				else if(isMarked(local, pos)){
-					local = expandTable(local,pos,(dataNode)tempNode,right);
+					System.out.println("Making array node at point 1");
+					arrayNode newLocal = expandTable(local,pos,(dataNode)tempNode,right);
+					if (newLocal != null){
+						local = newLocal;
+					}
 					break;
 				}
 				else if (tempNode == null){
+					//System.out.println("empty spot. insert here");
 					//compareAndSet(V expectedReference, V newReference, int expectedStamp, int newStamp)
 					if (local.array[pos].compareAndSet(null, insertThis, concurMap.UNINITIALIZED, concurMap.UNMARKED_DATA_NODE)){
 						return true;
 					}
 					else{
+						System.out.println("shouldn't see this without contention");
 						tempNode = getNode(local,pos);
 						if (isArrayNode(local,pos)){
 							local = (arrayNode) tempNode;
 							break;
 						}
 						else if (isMarked(local, pos)){
+							System.out.println("Making array node at point 2");
 							local = expandTable(local,pos,(dataNode)tempNode,right);
 							break;
 						}
@@ -148,12 +163,15 @@ public class concurMap{
 				//NOTE:this is where I don't really get why things are being done
 				else{
 					if (((dataNode)tempNode).hash == insertThis.hash){
+						System.out.println("2 nodes have the exact same hash value. this should NEVER be the case");
 						//compareAndSet(V expectedReference, V newReference, int expectedStamp, int newStamp)
 						if (local.array[pos].compareAndSet(tempNode, insertThis, concurMap.UNMARKED_DATA_NODE, concurMap.UNMARKED_DATA_NODE)){
 							//in c and c++, you free here
+							System.out.println("You're updating to a  new value");
 							return true;
 						}
 						else{
+							System.out.println("Some other node here already");
 							node tempNode2 = getNode(local,pos);
 							if (isArrayNode(local,pos)){
 								local = (arrayNode)tempNode2;
@@ -171,7 +189,16 @@ public class concurMap{
 					}
 					
 					else{
-						local = expandTable(local, pos, (dataNode)tempNode, right);
+						//I suppose this is the part where there's a different node here, and you're expanding here in 
+						//	order to insert your node. 
+						//System.out.println("Making array node at point 3");
+						arrayNode newLocal = expandTable(local, pos, (dataNode)tempNode, right);
+						if (newLocal != null){
+							local = newLocal;
+						}
+						else{
+							System.out.println("error allocating for expandTable #3 in insert");
+						}
 						//note: the isArrayNode function that directly takes in a
 						//node hasn't been implemented. we've been using the 
 						//atomicStampedReferece held by the parent arrayNode to determine
@@ -190,7 +217,17 @@ public class concurMap{
 				
 			}
 		}
-		System.out.println("Error: you went out of the for loop in the .put()");
+		/*
+		for (int i = 0; i < headArrayNode.array.length; i ++){
+			dataNode temp = ((dataNode)headArrayNode.array[i].getReference());
+			if (temp != null)
+				System.out.println(  temp.data.hashValue  );
+			else
+				System.out.println("at index " + i + ": null");
+		}
+		System.out.println("next iteration");
+		*/
+		//System.out.println("Error: you went out of the for loop in the .put()");
 		return false; //you should never end up getting here
 	}
 	
@@ -230,6 +267,14 @@ public class concurMap{
 		int failCount = 0; //only do at most MAX_FAIL_COUNT cas operations before exiting
 						   //and returning a failure
 		
+		/**
+		 * NOT SURE IF THIS IS CORRECT OR NOT. 
+		 * I'm assuming that it's not just marked nodes that can get expanded. 
+		 * if that' the case, then when I'm doing Compare and swap to replace a node
+		 * with an arraynode, then,  I can't just assume that it'll have the stamp of 
+		 * a marked data node. But this may cause the ABA problem if it's a deleted node. 
+		 */
+		int val = (local.array[oldPos].getStamp());
 		
 		//arrayNode local is the arrayNode that contained the marked node
 		//oldPos is the positon in the local array where the markedDataNode is 
@@ -250,19 +295,21 @@ public class concurMap{
 			//	due to the ABA problem, keep trying this again and and again until successful.
 			//compareAndSet(V expectedReference, V newReference, int expectedStamp, int newStamp)
 			if (newArrayNode.array[newPos].compareAndSet(null, markedNode, concurMap.UNINITIALIZED, concurMap.UNMARKED_DATA_NODE)){
-				
 				//in one atomic step, go and make the original local array's pointer that pointed to a 
 				//marked node go and point to the array node. 
 				//compareAndSet(V expectedReference, V newReference, int expectedStamp, int newStamp)
-				if (local.array[oldPos].compareAndSet(markedNode, newArrayNode, concurMap.MARKED_DATA_NODE, concurMap.ARRAY_NODE)){
+				//System.out.println(  (local.array[oldPos].getStamp()) );
+				if (local.array[oldPos].compareAndSet(markedNode, newArrayNode, val, concurMap.ARRAY_NODE)){
 					//go and return this to the algorithm now
+					//System.out.println("expand success");
 					return newArrayNode;
 				}
 				else{
 					//this failed either because another thread already put an array in here, or the node was deleted
 					if (local.array[oldPos].getStamp() == concurMap.ARRAY_NODE){
 						//some other thread has already put in the array node
-						return newArrayNode;
+						System.out.println("expand success");
+						return (arrayNode)local.array[oldPos].getReference();
 					}
 					else
 					{
@@ -277,8 +324,8 @@ public class concurMap{
 				break;
 			}
 		}
-		
-		return local;
+		System.out.println("failure to expand");
+		return null;
 		
 
 	}
@@ -315,7 +362,7 @@ public class concurMap{
 						if (isMarked(local,pos) && (tempNode2) == tempNode){
 							local = expandTable(local,pos, (dataNode)tempNode, R);
 						}
-						else if (isArrayNode(tempNode2)){
+						else if (isArrayNode(local,pos)){
 							continue;
 						}
 						else{
@@ -330,6 +377,7 @@ public class concurMap{
 			else
 				local = (arrayNode)tempNode;
 		}
+		return false;
 	}
 	
 }

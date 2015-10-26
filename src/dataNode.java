@@ -2,9 +2,10 @@ import java.util.concurrent.atomic.*;
 
 public class dataNode extends node{
 	int hash;
-	int data;
+	puzzlePosition data;
 	
-	public dataNode(int _hash, int _value){
+	public dataNode(int _hash, puzzlePosition _value){
+		this.isArrayNode = false;
 		this.hash = _hash;
 		this.data = _value;
 	}

@@ -5,6 +5,7 @@ public class arrayNode extends node{
 	AtomicStampedReference<node> [] array;
 	
 	public arrayNode(int size){
+		this.isArrayNode = true;
 		array = new AtomicStampedReference[size];
 		for (int i = 0; i < size; i++){
 			array[i] = new AtomicStampedReference<node>(null, concurMap.UNINITIALIZED);
